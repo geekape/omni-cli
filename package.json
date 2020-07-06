@@ -1,7 +1,7 @@
 {
-  "name": "omni-cli",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@yuanmeng/omni-cli",
+  "version": "1.0.6",
+  "description": "万能脚手架",
   "main": "index.js",
   "bin": {
     "omni": "./bin/omni.js"
@@ -22,7 +22,7 @@
     "url": "https://github.com/geekape/omni-cli/issues"
   },
   "homepage": "https://github.com/geekape/omni-cli#readme",
-  "devDependencies": {
+  "dependencies": {
     "chalk": "^4.1.0",
     "commander": "^5.1.0",
     "download-git-repo": "^3.0.2",

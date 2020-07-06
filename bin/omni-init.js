@@ -12,48 +12,46 @@ const logSymbols = require('log-symbols')
 
 program.usage('<project-name>').parse(process.argv)
 
-// 根据输入，获取项目名称
-let projectName = program.args[0]
+/**
+ * 获得初始化项目名称
+ */
+let projectName = (function() {
+  let name = program.args[0]
+  if (!name) {
+    program.help()
+  }
+  return name
+})()
 
-if (!projectName) {  // project-name 必填
-  // 相当于执行命令的--help选项，显示help信息，这是commander内置的一个命令选项
-  program.help()
-  return
+/**
+ * 判断名称是否同名
+ */
+function nextPromise() {
+  const list = glob.sync('*')  // 遍历当前目录
+  if (list.length) {
+    // 当前目录不为空
+    if (list.filter(name => {
+      const fileName = path.resolve(process.cwd(), path.join('.', name))
+      let isDir = fs.statSync(fileName).isDirectory()
+      return name.indexOf(projectName) !== -1 && isDir
+    }).length !== 0) {
+      console.log(`项目${projectName}已经存在`)
+      return undefined
+    }
+    return Promise.resolve(projectName)
+
+  } else {
+    return Promise.resolve(projectName)
+  }
 }
 
-let next = undefined
-const list = glob.sync('*')  // 遍历当前目录
-let rootName = path.basename(process.cwd())
-if (list.length) {  // 如果当前目录不为空
-  if (list.filter(name => {
-    const fileName = path.resolve(process.cwd(), path.join('.', name))
-    let isDir = fs.statSync(fileName).isDirectory()
-    return name.indexOf(projectName) !== -1 && isDir
-  }).length !== 0) {
-    console.log(`项目${projectName}已经存在`)
+
+function main() {
+  let next = nextPromise()
+
+  if (!next) {
     return
   }
-  next = Promise.resolve(projectName)
-} else if (rootName === projectName) {
-  next = inquirer.prompt([
-    {
-      name: 'buildInCurrent',
-      message: '当前目录为空，且目录名称和项目名称相同，是否直接在当前目录下创建新项目？',
-      type: 'confirm',
-      default: true
-    }
-  ]).then(answer => {
-    return Promise.resolve(answer.buildInCurrent ? '.' : projectName)
-  })
-} else {
-  next = Promise.resolve(projectName)
-}
-
-
-next && go()
-
-function go() {
-  // 预留，处理子命令
 
   next.then(projectRoot => {
     if (projectRoot !== '.') {
@@ -62,21 +60,34 @@ function go() {
     return projectRoot
   })
     .then(projectRoot => {
-      return inquirer.prompt([{
-        type: 'list',
-        message: '请选择一种脚手架:',
-        name: 'fruit',
-        choices: [
-          "Taro",
-          "UniAPP",
-          "React",
-          "Vue",
-        ],
-        filter: function (val) { // 使用filter将回答变为小写
-          return val.toLowerCase()
+      return inquirer.prompt([
+        {
+          name: 'projectName',
+          message: '项目的名称',
+          default: projectRoot
+        }, {
+          name: 'projectVersion',
+          message: '项目的版本号',
+          default: '1.0.0'
+        }, {
+          name: 'projectDescription',
+          message: '项目的简介',
+          default: `A project named ${projectRoot}`
+        },
+        {
+          type: 'list',
+          message: '请选择一种脚手架:',
+          name: 'fruit',
+          choices: [
+            "Taro",
+            "UniAPP",
+          ],
+          filter: function (val) { // 使用filter将回答变为小写
+            return val.toLowerCase()
+          }
         }
-      }]).then(val => {
-        return download(projectRoot).then(target => {
+      ]).then(val => {
+        return download(projectRoot, val.fruit).then(target => {
           return {
             name: projectRoot,
             root: projectRoot,
@@ -86,43 +97,13 @@ function go() {
       })
 
     })
-    // .then(context => {
-    //   return inquirer.prompt([
-    //     {
-    //       name: 'projectName',
-    //       message: '项目的名称',
-    //       default: context.name
-    //     }, {
-    //       name: 'projectVersion',
-    //       message: '项目的版本号',
-    //       default: '1.0.0'
-    //     }, {
-    //       name: 'projectDescription',
-    //       message: '项目的简介',
-    //       default: `A project named ${context.name}`
-    //     }
-    //   ]).then(answers => {
-    //     return latestVersion('macaw-ui').then(version => {
-    //       answers.supportUiVersion = version
-    //       return {
-    //         ...context,
-    //         metadata: {
-    //           ...answers
-    //         }
-    //       }
-    //     }).catch(err => {
-    //       return Promise.reject(err)
-    //     })
-    //   })
-    // })
-    // .then(context => {
-    //   return generator(context, context.name)
-    // })
     .then(context => {
       console.log(logSymbols.success, chalk.green('创建成功:)'))
       console.log()
-      console.log(chalk.green('cd ' + context.root + '\nnpm install\nnpm run dev:weapp'))
+      console.log(chalk.green('cd ' + context.root + '\nnpm install'))
     }).catch(err => {
       console.error(logSymbols.error, chalk.red(`创建失败：${error.message}`))
     })
 }
+
+main()
