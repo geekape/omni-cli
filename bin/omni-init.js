@@ -9,13 +9,14 @@ const latestVersion = require('latest-version')
 const generator = require('../lib/generator')
 const chalk = require('chalk')
 const logSymbols = require('log-symbols')
+const jsonfile = require('jsonfile')
 
 program.usage('<project-name>').parse(process.argv)
 
 /**
  * 获得初始化项目名称
  */
-let projectName = (function() {
+let projectName = (function () {
   let name = program.args[0]
   if (!name) {
     program.help()
@@ -89,6 +90,7 @@ function main() {
       ]).then(val => {
         return download(projectRoot, val.fruit).then(target => {
           return {
+            ...val,
             name: projectRoot,
             root: projectRoot,
             downloadTemp: target
@@ -98,10 +100,25 @@ function main() {
 
     })
     .then(context => {
+      const packageFile = path.resolve(__dirname, `../${context.name}/package.json`)
+
+      jsonfile.readFile(packageFile, function (err, data) {
+        if (err) console.error(err)
+        data.name = context.projectName
+        data.version = context.projectVersion
+        data.description = context.projectDescription
+        jsonfile.writeFile(packageFile, data, function (err) {
+          if (err) console.error(err)
+          console.log('package写入成功')
+          return context
+        })
+      })
+    })
+    .then(context => {
       console.log(logSymbols.success, chalk.green('创建成功:)'))
       console.log()
       console.log(chalk.green('cd ' + context.root + '\nnpm install'))
-    }).catch(err => {
+    }).catch(error => {
       console.error(logSymbols.error, chalk.red(`创建失败：${error.message}`))
     })
 }
