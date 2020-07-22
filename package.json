@@ -1,6 +1,6 @@
 {
   "name": "@yuanmeng/omni-cli",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "万能脚手架",
   "main": "index.js",
   "bin": {
@@ -25,6 +25,7 @@
   "dependencies": {
     "chalk": "^4.1.0",
     "commander": "^5.1.0",
+    "consolidate": "^0.15.1",
     "download-git-repo": "^3.0.2",
     "glob": "^7.1.6",
     "handlebars": "^4.7.6",
